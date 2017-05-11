@@ -1,0 +1,110 @@
+#Machine Learning Project 1: Classification of Iris Flowers
+#The project will go through the following 5 steps;
+#1. Loading the dataset
+#2. Summarizing the dataset
+#3. Visualizing the dataset
+#4. Evaluating the algorithms
+#6. Making some predictions
+
+
+#Loading libraries
+from pandas import read_csv
+from pandas.tools.plotting import scatter_matrix
+from matplotlib import pyplot
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+
+#Step 1: Loading the dataset
+filename = 'iris.csv'
+names = ['sepal-length', 'sepal-width', 'petal-length', 'petal-width', 'class']
+dataset = read_csv(filename, names=names)
+
+# Summarizing the dataset
+#Shape of the dataset
+print(dataset.shape)
+#This gives us a row by column count of the dataset
+
+#Peek at the dataset
+print(dataset.head(20)) #Displays the first 20 rows
+
+#Statistical summary of the dataset attributes
+print(dataset.describe())
+
+#Class distribution
+#This provides a description of the attributes in class that we are trying to predict
+print(dataset.groupby('class').size())
+
+#Data Visualization
+
+# For data visualization we create both Univariate plots and Multivariate plots
+#Univariate plots give us a better understanding of each attaribute
+#Box and whisker plots
+#dataset.plot(kind='box', subplots=True, layout=(2, 2), sharex=False, sharey=False)
+#pyplot.show()
+
+#Histogram
+#dataset.hist()
+#pyplot.show() #Shows histogram distributions of the data attributes
+
+#Multivariate plots give us a better understanding of the relationships between the different attributes
+#Scatter plot matrix
+#scatter_matrix(dataset)
+#pyplot.show()
+
+#Evaluating some algorithms
+#This is going to take 5 steps shown below;
+#Step1: Creating a validation dataset
+array = dataset.values
+X = array[:,0:4]
+Y = array[:,4]
+validation_size = 0.33
+seed = 7
+X_train, X_validation, Y_train, Y_validation = train_test_split(X, Y, test_size=validation_size, random_state=seed)
+
+#Spot checking algorithms
+models = []
+models.append(('LR', LogisticRegression()))
+models.append(('LDA', LinearDiscriminantAnalysis()))
+models.append(('KNN', KNeighborsClassifier()))
+models.append(('CART', DecisionTreeClassifier()))
+models.append(('NB', GaussianNB()))
+models.append(('SVM', SVC()))
+
+#Evaluating each model in turn
+results = []
+names = []
+
+for name, model in models:
+    kfold = KFold(n_splits=10, random_state=seed)
+    cv_results = cross_val_score(model, X_train, Y_train, cv=kfold, scoring='accuracy')
+    results.append(cv_results)
+    names.append(name)
+    msg = "%s: %f (%f)" %(name, cv_results.mean(), cv_results.std())
+    print(msg)
+#Comparing the different algorithms through plots of the model evaluation results
+fig = pyplot.figure()
+fig.suptitle('Algorithm Comparison')
+ax = fig.add_subplot(111)
+pyplot.boxplot(results)
+ax.set_xticklabels(names)
+pyplot.show()
+
+#SVC was the most accurate model that we got, so we are going to test the validation dataset on it and try to make some predictions
+#Making predictions on the validation dataset
+knn = SVC()
+knn.fit(X_train,Y_train)
+predictions = knn.predict(X_validation)
+print(accuracy_score(Y_validation, predictions)) #Provides an indication of the accuracy on the validation dataset, it was over 96%
+print(confusion_matrix(Y_validation, predictions)) #Provides an indication of the errors made while predicting eadh class
+print(classification_report(Y_validation, predictions)) #provides a breakdown of each class by precision, recall, f1-score and support
+
